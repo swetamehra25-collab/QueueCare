@@ -1,4 +1,4 @@
-const API_ROOT = "/api";
+const API_ROOT = import.meta.env.VITE_API_URL || "/api";
 
 export async function api(path, options = {}) {
   const token = localStorage.getItem("queuecare-token");
