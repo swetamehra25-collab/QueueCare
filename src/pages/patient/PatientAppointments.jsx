@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { get, post } from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { displayTime, formatDate, todayISO } from "../../utils/helpers";
+import "../../styles/patient-appointments.css";
 
 export default function PatientAppointments() {
   const location = useLocation();
@@ -54,7 +55,7 @@ export default function PatientAppointments() {
   }
 
   return (
-    <div className="patient-page">
+    <div className="patient-page patient-appointments-page">
       <div className="patient-page-intro"><span className="eyebrow">YOUR VISITS</span><h2>Appointments & queue tracking.</h2><p>Your confirmations and visit status, all in one place.</p></div>
       {confirmed && <section className="booking-confirmation" role="status">
         <div className="confirmation-check"><CheckCircle2 size={22} /></div><div className="confirmation-copy"><span>BOOKING CONFIRMED</span><h2>You’re all set.</h2><p>Your appointment with Dr. {confirmed.doctor?.name} is booked for {formatDate(confirmed.date, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })} at {displayTime(confirmed.time)}.</p></div>

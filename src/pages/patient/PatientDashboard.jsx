@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { get } from "../../services/api";
 import { formatDate, displayTime, todayISO } from "../../utils/helpers";
 import { useAuth } from "../../context/AuthContext";
+import "../../styles/patient-dashboard.css";
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ export default function PatientDashboard() {
   const next = appointments.find((appointment) => ["scheduled", "waiting", "in-consultation"].includes(appointment.status) && new Date(appointment.date).toISOString().slice(0, 10) >= todayISO());
   const today = next && new Date(next.date).toISOString().slice(0, 10) === todayISO();
   return (
-    <div className="patient-page">
+    <div className="patient-page patient-dashboard-page">
       <div className="patient-page-intro"><span className="eyebrow">YOUR QUEUECARE PORTAL</span><h2>Welcome, {user.name?.split(" ")[0]}.</h2><p>Your care journey, thoughtfully organized.</p></div>
       <div className="patient-stat-row">
         <div className="patient-stat-card"><span className="patient-stat-icon"><CalendarPlus size={19} /></span><div><b>{appointments.filter((item) => ["scheduled", "waiting", "in-consultation"].includes(item.status)).length}</b><small>Upcoming visits</small></div></div>

@@ -1,0 +1,65 @@
+/* Patient appointments page only */
+.patient-appointments-page .patient-empty {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 28px 20px;
+  text-align: center;
+}
+.patient-appointments-page .patient-empty .empty-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  margin: 0;
+}
+.patient-appointments-page .patient-empty b {
+  color: #627279;
+  font-size: 11px;
+}
+.patient-appointments-page .patient-empty > span {
+  max-width: 430px;
+  color: #929e9b;
+  font-size: 9px;
+  line-height: 1.55;
+}
+.patient-appointments-page .patient-empty .button {
+  min-height: 36px;
+  margin-top: 5px;
+}
+.patient-appointments-page .booking-confirmation {
+  align-items: center;
+}
+.patient-appointments-page .patient-appointment-card {
+  align-items: start;
+}
+.patient-appointments-page .patient-appointment-actions {
+  min-width: 94px;
+}
+@media (max-width: 800px) {
+  .patient-appointments-page .patient-appointment-card {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+  .patient-appointments-page .patient-appointment-actions {
+    grid-column: 2;
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+@media (max-width: 560px) {
+  .patient-appointments-page .patient-empty {
+    min-height: 220px;
+    padding: 20px 12px;
+  }
+  .patient-appointments-page .patient-appointment-card {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+  .patient-appointments-page .patient-appointment-actions {
+    grid-column: 2;
+  }
+}
