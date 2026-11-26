@@ -7,7 +7,7 @@ import EmergencyRequest from "../models/EmergencyRequest.js";
 import Patient from "../models/Patient.js";
 import QueueCounter from "../models/QueueCounter.js";
 import User from "../models/User.js";
-import { sendAppointmentConfirmation, sendPatientWelcome } from "../services/email.js";
+import { sendAppointmentConfirmation, sendPatientWelcome, sendTestEmail } from "../services/email.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -18,12 +18,14 @@ const doctorFields = ["name", "specialty", "department", "email", "phone", "room
 const appointmentFields = ["patient", "doctor", "date", "time", "type", "notes"];
 const emergencyFields = ["patientName", "location", "condition", "severity"];
 const populateAppointment = (query) => query.populate("patient", "fullName patientId phone").populate("doctor", "name specialty department");
-const patientUser = (user) => ({
+const patientUser = (user, patientRecord = null) => ({
   id: user.id,
-  name: user.name,
+  name: user.role === "admin" ? "Sweta Mehra" : user.name,
   email: user.email,
   role: user.role,
-  ...(user.patient ? { patientId: user.patient.toString() } : {}),
+  ...(patientRecord?.patientId ? { patientId: patientRecord.patientId }
+    : user.patient?.patientId ? { patientId: user.patient.patientId }
+      : user.patient ? { patientId: "—" } : {}),
 });
 
 function parseDateOnly(value) {
@@ -81,7 +83,7 @@ async function allocateDailyToken(date) {
 router.post("/auth/login", asyncRoute(async (req, res) => {
   const email = String((req.body || {}).email || "").toLowerCase().trim();
   const password = String((req.body || {}).password || "");
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email, role: { $in: ["admin", "staff"] } }).select("+password");
   if (!user || !(await user.comparePassword(password))) {
     return res.status(401).json({ message: "The email or password you entered isn’t right." });
   }
@@ -92,7 +94,7 @@ router.post("/auth/login", asyncRoute(async (req, res) => {
 router.post("/auth/patient/login", asyncRoute(async (req, res) => {
   const email = String((req.body || {}).email || "").toLowerCase().trim();
   const password = String((req.body || {}).password || "");
-  const user = await User.findOne({ email, role: "patient" }).select("+password");
+  const user = await User.findOne({ email, role: "patient" }).select("+password").populate("patient", "patientId");
   if (!user || !(await user.comparePassword(password))) {
     return res.status(401).json({ message: "The email or password you entered isn’t right." });
   }
@@ -138,10 +140,21 @@ router.post("/auth/patient/register", asyncRoute(async (req, res) => {
   } catch (error) {
     console.error(`Patient account ${user.id} was created, but its welcome email could not be sent:`, error);
   }
-  return res.status(201).json({ token, user: patientUser(user), emailSent });
+  return res.status(201).json({ token, user: patientUser(user, patient), emailSent });
 }));
 
 router.use(requireAuth);
+router.post("/auth/password/change", requireRole("admin", "staff"), asyncRoute(async (req, res) => {
+  const currentPassword = String((req.body || {}).currentPassword || "");
+  const newPassword = String((req.body || {}).newPassword || "");
+  if (newPassword.length < 12 || newPassword.length > 128) return res.status(400).json({ message: "Use a new password between 12 and 128 characters." });
+  const user = await User.findById(req.user.id).select("+password");
+  if (!user || !(await user.comparePassword(currentPassword))) return res.status(401).json({ message: "Your current password is not correct." });
+  user.password = newPassword;
+  await user.save();
+  return res.json({ message: "Password changed successfully." });
+}));
+
 router.get("/auth/me", (req, res) => res.json({ user: patientUser(req.user) }));
 
 router.get("/portal/doctors", requireRole("patient"), asyncRoute(async (req, res) => {
@@ -386,10 +399,31 @@ router.get("/appointments", asyncRoute(async (req, res) => {
 
 router.post("/appointments", asyncRoute(async (req, res) => {
   const data = pick(req.body || {}, appointmentFields);
+  const date = parseDateOnly(String(data.date || ""));
+  const time = String(data.time || "");
+  const type = String(data.type || "").trim();
+  if (!date || !dailySlots(date).includes(time) || type.length < 1 || type.length > 100) {
+    return res.status(400).json({ message: "Choose a future weekday, valid time, patient, clinician, and visit type." });
+  }
   if (!await Patient.exists({ _id: data.patient })) return res.status(400).json({ message: "Choose an existing patient." });
-  if (!await Doctor.exists({ _id: data.doctor })) return res.status(400).json({ message: "Choose an existing clinician." });
-  const appointment = await Appointment.create(data);
-  res.status(201).json({ data: await populateAppointment(Appointment.findById(appointment._id)) });
+  const doctor = await Doctor.findOne({ _id: data.doctor, status: { $ne: "On leave" } });
+  if (!doctor) return res.status(400).json({ message: "Choose an available clinician." });
+  const { start, end } = utcDayRange(date);
+  if (await Appointment.exists({ doctor: doctor._id, date: { $gte: start, $lt: end }, time, status: { $in: ["scheduled", "waiting", "in-consultation"] } })) {
+    return res.status(409).json({ message: "That clinician is already booked at this time." });
+  }
+  const tokenNumber = await allocateDailyToken(date);
+  const appointment = await Appointment.create({ ...data, date, time, type, tokenNumber });
+  const populated = await populateAppointment(Appointment.findById(appointment._id));
+  const patient = await Patient.findById(data.patient).select("fullName email");
+  if (patient?.email) {
+    try {
+      await sendAppointmentConfirmation({ to: patient.email, patientName: patient.fullName, doctorName: doctor.name, date: appointment.date, time: appointment.time, type: appointment.type, tokenNumber: appointment.tokenNumber });
+    } catch (error) {
+      console.error(`Staff appointment ${appointment.id} was created, but confirmation email could not be sent:`, error);
+    }
+  }
+  res.status(201).json({ data: populated });
 }));
 
 router.put("/appointments/:id", asyncRoute(async (req, res) => {
@@ -450,6 +484,24 @@ router.delete("/emergencies/:id", asyncRoute(async (req, res) => {
   const data = await EmergencyRequest.findByIdAndDelete(req.params.id);
   if (!data) return res.status(404).json({ message: "Emergency request not found." });
   return res.json({ message: "Emergency request removed." });
+}));
+
+router.post("/test-email", requireRole("admin"), asyncRoute(async (req, res) => {
+  const email = String((req.body || {}).email || "").toLowerCase().trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: "Enter a valid email address." });
+  try {
+    await sendTestEmail({ to: email });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to send test email." });
+  }
+  return res.json({ message: "Test email sent successfully." });
+}));
+
+router.post("/email/test", requireRole("admin"), asyncRoute(async (req, res) => {
+  const to = String((req.body || {}).to || req.user.email || "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return res.status(400).json({ message: "Enter a valid email address for the delivery test." });
+  await sendTestEmail({ to });
+  return res.json({ message: `Test email sent successfully to ${to}.` });
 }));
 
 export default router;

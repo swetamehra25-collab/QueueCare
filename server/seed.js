@@ -7,27 +7,31 @@ import QueueCounter from "./models/QueueCounter.js";
 import User from "./models/User.js";
 import mongoose from "mongoose";
 
-const adminEmail = String(process.env.ADMIN_EMAIL || "swetamehra790@gmail.com").toLowerCase().trim();
+const adminEmail = String(process.env.ADMIN_EMAIL || "").toLowerCase().trim();
 const adminPassword = process.env.ADMIN_PASSWORD;
 
-if (!adminPassword || !adminPassword.trim() || adminPassword.length < 8) {
-  throw new Error("Set ADMIN_PASSWORD in .env to a private password of at least 8 characters before seeding.");
+if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+  throw new Error("Set ADMIN_EMAIL to the administrator's valid email address before seeding.");
+}
+if (!adminPassword || !adminPassword.trim() || adminPassword.length < 12) {
+  throw new Error("Set ADMIN_PASSWORD in .env to a private password of at least 12 characters before seeding.");
 }
 
 await connectDatabase();
 
 try {
   let user = await User.findOne({ email: adminEmail });
-  if (!user) user = await User.findOne({ email: { $in: ["swetamehra@790gmail.com", "admin@queuecare.com"] }, role: "admin" });
+  if (!user) user = await User.findOne({ email: adminEmail, role: "admin" });
   if (user && user.role !== "admin") throw new Error("ADMIN_EMAIL is already assigned to a non-admin account.");
 
   if (user) {
+    user.name = "Sweta Mehra";
     user.email = adminEmail;
     user.password = adminPassword;
     await user.save();
     console.log("Updated the admin account from the configured environment.");
   } else {
-    await User.create({ name: "QueueCare Admin", email: adminEmail, password: adminPassword, role: "admin" });
+    await User.create({ name: "Sweta Mehra", email: adminEmail, password: adminPassword, role: "admin" });
     console.log("Created the admin account from the configured environment.");
   }
 

@@ -48,3 +48,30 @@ All endpoints except health and sign-in require `Authorization: Bearer <JWT>`.
 - `GET /api/dashboard`
 
 Patient and clinician deletion is guarded when appointment history or active visits depend on the record. Moving an appointment into the waiting or consultation state assigns the next daily token.
+
+## Secure production setup
+
+Set these variables on Render and Vercel as appropriate:
+
+- Render API: `MONGODB_URI`, `JWT_SECRET` (32+ random characters), `JWT_EXPIRES_IN`, `CLIENT_ORIGIN` (comma-separated Vercel origins if needed), SMTP variables, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` (12+ characters).
+- Vercel frontend: `VITE_API_URL=https://your-render-service.onrender.com/api`.
+- Run `npm run seed` once against the Render database after setting the admin variables. The seed script requires an explicit admin email/password and never ships with a default password.
+
+### Administrator password reset
+
+Use **Forgot password?** on `/login`. QueueCare sends a single-use reset link valid for 30 minutes only when SMTP is configured and only if the submitted email belongs to an administrator. Reset links are stored as hashes, never in plaintext. Authenticated administrators can also change passwords through `/api/auth/password/change`.
+
+### Gmail appointment emails
+
+1. Enable 2-Step Verification in the Gmail account.
+2. Create a Google App Password for **Mail**.
+3. Set locally or on Render:
+   - `SMTP_HOST=smtp.gmail.com`
+   - `SMTP_PORT=587`
+   - `SMTP_SECURE=false`
+   - `SMTP_USER=your-full-gmail-address@gmail.com`
+   - `SMTP_PASSWORD=the-16-character-app-password`
+   - `MAIL_FROM=your-full-gmail-address@gmail.com`
+4. Restart the API. Test delivery with an authenticated admin request: `POST /api/email/test` and body `{ "to": "recipient@example.com" }`.
+
+Do not use the normal Gmail password or store the app password in source control.

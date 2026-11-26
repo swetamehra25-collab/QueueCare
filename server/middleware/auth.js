@@ -7,7 +7,7 @@ export async function requireAuth(req, res, next) {
   if (!token) return res.status(401).json({ message: "Sign in to continue." });
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(payload.sub).select("name email role patient");
+    const user = await User.findById(payload.sub).select("name email role patient").populate("patient", "patientId");
     if (!user) return res.status(401).json({ message: "Your session is no longer valid. Please sign in again." });
     req.user = user;
     return next();

@@ -1,7 +1,8 @@
 import { HeartPulse, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import "../../styles/auth-back.css";
 
-export default function AuthPage({ className = "", eyebrow, title, description, children }) {
+export default function AuthPage({ className = "", eyebrow, title, description, children, backTo = null, backLabel = "Back" }) {
   return (
     <main className={`auth-page ${className}`}>
       <div className="auth-page-glow auth-page-glow-one" />
@@ -11,6 +12,7 @@ export default function AuthPage({ className = "", eyebrow, title, description, 
           <span className="brand-mark"><HeartPulse size={22} /></span><span>QueueCare</span>
         </Link>
         <span className="auth-brand-note"><ShieldCheck size={15} /> Care, connected</span>
+        {backTo && <Link className="auth-back-link" to={backTo}>{backLabel}</Link>}
       </header>
       <section className="auth-card" aria-labelledby="auth-title">
         <div className="auth-photo">

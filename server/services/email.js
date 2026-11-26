@@ -19,15 +19,31 @@ function createTransporter() {
     throw new Error("SMTP_PORT must be a valid TCP port.");
   }
 
+  const secure = String(process.env.SMTP_SECURE || "").toLowerCase() === "true" || port === 465;
   return {
     from: MAIL_FROM,
     transporter: nodemailer.createTransport({
       host: SMTP_HOST,
       port,
-      secure: port === 465,
+      secure,
+      requireTLS: !secure,
       auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+      connectionTimeout: 15000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
     }),
   };
+}
+
+export async function sendTestEmail({ to }) {
+  const { from, transporter } = createTransporter();
+  await transporter.sendMail({
+    from,
+    to,
+    subject: "QueueCare email delivery test",
+    text: "This test confirms that QueueCare can send email successfully.",
+    html: `<div style="font-family:Arial,sans-serif;color:#31434a"><h2 style="color:#28775a">QueueCare email is working</h2><p>This test confirms that QueueCare can send email successfully.</p></div>`,
+  });
 }
 
 export async function sendPatientWelcome({ to, patientName }) {

@@ -14,7 +14,18 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error("JWT_SECRET must be set to a random value of at least 32 characters.");
 }
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || "http://localhost:5173" }));
+const allowedOrigins = String(process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(/[ ,]+/)
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("This origin is not allowed by QueueCare CORS policy."));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: "1mb" }));
 app.use((req, res, next) => {
   req.body ||= {};

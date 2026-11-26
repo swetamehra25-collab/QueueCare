@@ -44,6 +44,8 @@ export default function PatientAccess() {
       eyebrow={registering ? "PATIENT REGISTRATION" : "PATIENT PORTAL"}
       title={registering ? "Your care starts here" : "Welcome back"}
       description={registering ? "Create your account to book visits and stay connected to your care." : "Sign in to manage your appointments and follow your care journey."}
+      backTo="/"
+      backLabel="← Back to workspaces"
     >
       <form onSubmit={submit} className="login-form auth-form patient-access-form">
         {registering && <>

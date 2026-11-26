@@ -1,0 +1,108 @@
+/* QueueCare admin header search and notifications only */
+.admin-header .topbar-actions,
+.topbar-actions {
+  position: relative;
+}
+.header-popover {
+  position: absolute;
+  z-index: 80;
+  top: 48px;
+  width: 330px;
+  max-width: calc(100vw - 20px);
+  overflow: hidden;
+  border: 1px solid #e3ebe7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(30,60,52,.16);
+}
+.search-popover { right: 145px; }
+.notification-popover { right: 92px; }
+.popover-search {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: #82908d;
+  border-bottom: 1px solid #edf1ef;
+}
+.popover-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #43545a;
+  background: transparent;
+  font-size: 11px;
+}
+.popover-search button {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  color: #8a9995;
+  border: 0;
+  background: transparent;
+}
+.popover-results { max-height: 360px; overflow-y: auto; }
+.popover-results > button,
+.notification-popover > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid #f1f3f2;
+  background: #fff;
+}
+.popover-results > button:hover,
+.notification-popover > button:hover { background: #f7fbf8; }
+.popover-result-icon,
+.notification-icon {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #4b9876;
+  border-radius: 8px;
+  background: #eaf6ef;
+}
+.popover-results b,
+.popover-results small,
+.notification-popover b,
+.notification-popover small { display: block; }
+.popover-results b,
+.notification-popover b { color: #45575a; font-size: 10px; }
+.popover-results small,
+.notification-popover small { margin-top: 3px; color: #929e9b; font-size: 8px; }
+.popover-empty { padding: 22px 12px; color: #929e9b; text-align: center; font-size: 10px; }
+.notification-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid #edf1ef;
+  color: #45575a;
+  font-size: 11px;
+}
+.notification-heading span {
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: #4b9876;
+  border-radius: 10px;
+  background: #eaf6ef;
+  font-size: 9px;
+}
+@media (max-width: 560px) {
+  .header-popover {
+    position: fixed;
+    top: 62px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+}
